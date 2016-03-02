@@ -6,12 +6,16 @@
 - 写 markdown 时不需要关注样式问题
 - 通过复制粘贴的文字总是会有样式混乱的问题，因为微信使用了 copy as html 的复制
 
+要解决的问题
+
+- 解决 wordpress discuss 微信公众号排版问题，直接复制啥是啥
+
 样式细节
 
 - 正文
 	- 行高 1.6 - 2.0
 	- 大小 16px
-	- 字体栈 `Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif`
+	- 字体栈 `'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif`
 	- 颜色，深灰色 `rgb(70, 70, 70)` `#444;?`
 
 - 标题
