@@ -6,25 +6,25 @@ var mdParse = SimpleMarkdown.defaultBlockParse
 var mdOutput = SimpleMarkdown.defaultOutput
 var rules = SimpleMarkdown.defaultRules
 rules = getBestRules(rules)
-//console.log(rules)
-console.log(rules.paragraph.html)
+console.log(rules)
+// console.log(rules.paragraph.html)
 
 var htmlOutput = SimpleMarkdown.htmlFor(SimpleMarkdown.ruleOutput(rules, 'html'))
 
 exports.getHTML = function(markdown) {
 	var syntaxTree = mdParse(markdown)
-	console.log(JSON.stringify(syntaxTree, 0, 4))
+	// console.log(JSON.stringify(syntaxTree, 0, 4))
 	var html = htmlOutput(syntaxTree)
 	return html
 }
 
 function getBestRules(rules) {
+	// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
 	rules = _.extend({}, rules)
 
 	rules.paragraph.html = function(node, output, state) {
 		return htmlTag('p', output(node.content, state))
 	}
-
 	return rules
 }
 

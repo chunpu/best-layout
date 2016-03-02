@@ -4,13 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"debug": "webpack browser/app.js --output-file browser/bundle.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "css-loader": "^0.23.1",
     "debug": "^2.2.0",
+    "html-loader": "^0.4.3",
+    "less": "^2.6.0",
+    "less-loader": "^2.2.2",
     "lodash": "^4.5.1",
-    "simple-markdown": "0.0.9"
+    "simple-markdown": "0.0.9",
+    "webpack": "^1.12.14"
   }
 }
