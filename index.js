@@ -5,6 +5,22 @@ var debug = require('debug')('best-layout')
 var mdParse = SimpleMarkdown.defaultBlockParse
 var mdOutput = SimpleMarkdown.defaultOutput
 var rules = SimpleMarkdown.defaultRules
+
+var customRules = {
+	// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
+	paragraph: {
+		html: function(node, output, state) {
+			return htmlTag('p', output(node.content, state), {style: 'font-size: 16px'})
+		}
+	}
+	, heading: {
+		html: function(node, output, state) {
+			return htmlTag('h' + node.level, output(node.content, state), {style: 'font-size: 20px'})
+		}
+	}
+}
+
+
 rules = getBestRules(rules)
 console.log(rules)
 // console.log(rules.paragraph.html)
@@ -19,14 +35,13 @@ exports.getHTML = function(markdown) {
 }
 
 function getBestRules(rules) {
-	// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
-	rules = _.extend({}, rules)
-
-	rules.paragraph.html = function(node, output, state) {
-		return htmlTag('p', output(node.content, state))
-	}
-	return rules
+	var ret = {}
+	_.forIn(rules, function(val, key) {
+		ret[key] = _.extend({}, val, customRules[key])
+	})
+	return ret
 }
+
 
 function htmlTag(tagName, content, attributes, isClosed) {
 	// copy from simple-markdown

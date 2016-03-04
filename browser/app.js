@@ -28,7 +28,7 @@ function init() {
 		$iframe.attr('srcdoc', doc)
 	}, 800, {leading: true, trailing: true, maxWait: 3000})).val(demoMarkdown).trigger(evName)
 
-	
+	/*
 	new Clipboard('#copy', {
 		text: function(trigger) {
 			console.log(trigger)
@@ -36,6 +36,7 @@ function init() {
 			return '<h1>xxxx</h1>'
 		}
 	})
+	*/
 
 	var $doc = $(document)
 	$doc.on('copy', function(e) {
