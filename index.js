@@ -6,8 +6,19 @@ var mdParse = SimpleMarkdown.defaultBlockParse
 var mdOutput = SimpleMarkdown.defaultOutput
 var rules = SimpleMarkdown.defaultRules
 
-var customRules = {
-	// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
+var lineHeight = 1.6
+var textFontSize = '16px'
+var headFontSize = '20px'
+var textColor = '#ccc'
+var fontFamily = "'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif"
+var codeFontFamily = "Consolas, 'Liberation Mono', Menlo, Courier, monospace"
+
+// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
+// heading hr codeBlock blockQuote list table newline paragraph link image strong u em del inlineCode br text
+// important: heading paragraph strong inlineCode blockQuote
+
+var modernRules = {
+	// weixin mail?
 	paragraph: {
 		html: function(node, output, state) {
 			return htmlTag('p', output(node.content, state), {style: 'font-size: 16px'})
@@ -20,8 +31,37 @@ var customRules = {
 	}
 }
 
+var oldRules = {
+	// discuz
+	// font support `style="background-color: xxx"`
+	paragraph: {
+		html: function(node, output, state) {
+			var font = htmlTag('font', output(node.content, state), {face: fontFamily, size: 3, color: textColor})
+			return htmlTag('div', font)
+		}
+	}
+	, heading: {
+		html: function(node, output, state) {
+			return htmlTag('h' + node.level, output(node.content, state), {face: fontFamily, size: 2, color: textColor})
+		}
+	}
+	, inlineCode: {
+		html: function(node, output, state) {
+			return htmlTag('font', node.content, {face: codeFontFamily})
+		}
+	}
+	, blockQuote: {
+		html: function(node, output, state) {
+			return htmlTag('blockquote', output(node.content, state), {style: getCSSText({'border': '1px solid red'})})
+		}
+	}
 
-rules = getBestRules(rules)
+}
+
+// var aaa = getCSSText({'border': '1px solid red'})
+// console.log(aaa)
+
+rules = getBestRules(rules, oldRules)
 console.log(rules)
 // console.log(rules.paragraph.html)
 
@@ -34,7 +74,7 @@ exports.getHTML = function(markdown) {
 	return html
 }
 
-function getBestRules(rules) {
+function getBestRules(rules, customRules) {
 	var ret = {}
 	_.forIn(rules, function(val, key) {
 		ret[key] = _.extend({}, val, customRules[key])
@@ -42,6 +82,11 @@ function getBestRules(rules) {
 	return ret
 }
 
+function getCSSText(obj) {
+	return _.map(_.keys(obj), function(key) {
+		return key + ':' + obj[key]
+	}).join(';')
+}
 
 function htmlTag(tagName, content, attributes, isClosed) {
 	// copy from simple-markdown

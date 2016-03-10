@@ -1,6 +1,13 @@
 var bestLayout = require('./')
 
-var markdown = '## h1\n\n > quote\n\npppp'
+var markdown = `
+## h1
+
+> quote
+
+
+ppppp \`code\` code
+`
 
 var html = bestLayout.getHTML(markdown)
 
