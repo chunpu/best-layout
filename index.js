@@ -9,8 +9,14 @@ var rules = SimpleMarkdown.defaultRules
 var lineHeight = 1.6
 var textFontSize = '16px'
 var headFontSize = '20px'
-var textColor = '#ccc'
-var fontFamily = "'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif"
+var themeColor = 'green'
+var textColor = '#333'
+var lightTextColor = '#888'
+var serif = ''
+var sansSerif = 'Helvetica, Arial, 微软雅黑, SimSun, Song, sans-serif'
+// var fontFamily = "'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif"
+var fontFamily = 'Helvetica Neue, Arial, Hiragino Sans GB, STHeiti, Microsoft YaHei, WenQuanYi Micro Hei, SimSun, Song, sans-serif'
+var fontFamily = ""
 var codeFontFamily = "Consolas, 'Liberation Mono', Menlo, Courier, monospace"
 
 // https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
@@ -21,12 +27,45 @@ var modernRules = {
 	// weixin mail?
 	paragraph: {
 		html: function(node, output, state) {
-			return htmlTag('p', output(node.content, state), {style: 'font-size: 16px'})
+			var style = {
+				  color: textColor
+				, 'line-height': lineHeight
+				, 'font-size': textFontSize
+				, 'font-family': fontFamily
+				, 'font-weight': 'normal'
+			}
+			var raw = htmlTag('p', output(node.content, state), {style: getCSSText(style)})
+			return raw
 		}
 	}
 	, heading: {
 		html: function(node, output, state) {
-			return htmlTag('h' + node.level, output(node.content, state), {style: 'font-size: 20px'})
+			var style = {
+				  color: themeColor
+				, 'line-height': lineHeight
+				, 'font-size': headFontSize
+				// , 'font-family': fontFamily + ", 'Helvetica Neue'"
+				, 'font-weight': 'bold'
+			}
+			var raw = htmlTag('h' + node.level, output(node.content, state), {style: getCSSText(style)})
+			// var raw = htmlTag('section', output(node.content, state), {style: getCSSText(style)})
+			return raw
+		}
+	}
+	, inlineCode: {
+		html: function(node, output, state) {
+			var style = {
+				// 'font-family': codeFontFamily
+			}
+			return htmlTag('code', node.content, {style: getCSSText(style)})
+		}
+	}
+	, blockQuote: {
+		html: function(node, output, state) {
+			var style = {
+				border: '1px solid red'
+			}
+			return htmlTag('blockquote', output(node.content, state), {style: getCSSText(style)})
 		}
 	}
 }
@@ -52,16 +91,20 @@ var oldRules = {
 	}
 	, blockQuote: {
 		html: function(node, output, state) {
-			return htmlTag('blockquote', output(node.content, state), {style: getCSSText({'border': '1px solid red'})})
+			return htmlTag('blockquote', output(node.content, state), {})
 		}
 	}
-
+	, strong: {
+		html: function(node, output, state) {
+			return htmlTag('strong', output(node.content, state), {})
+		}
+	}
 }
 
 // var aaa = getCSSText({'border': '1px solid red'})
 // console.log(aaa)
 
-rules = getBestRules(rules, oldRules)
+rules = getBestRules(rules, modernRules)
 console.log(rules)
 // console.log(rules.paragraph.html)
 
@@ -88,21 +131,16 @@ function getCSSText(obj) {
 	}).join(';')
 }
 
-function htmlTag(tagName, content, attributes, isClosed) {
+function htmlTag(tagName, content, attr, isClosed) {
 	// copy from simple-markdown
-    attributes = attributes || {};
     isClosed = typeof isClosed !== 'undefined' ? isClosed : true;
+	attr = _.map(_.keys(attr), function(key) {
+		var val = attr[key]
+		val = val.replace(/"/g, '\\"')
+		return key + '="' + val + '"'
+	}).join(' ')
 
-    var attributeString = "";
-    for (var attr in attributes) {
-        // Removes falsey attributes
-        if (Object.prototype.hasOwnProperty.call(attributes, attr) &&
-                attributes[attr]) {
-            attributeString += " " + attr + '="' + attributes[attr] + '"';
-        }
-    }
-
-    var unclosedTag = "<" + tagName + attributeString + ">";
+    var unclosedTag = "<" + tagName + ' ' + attr + ">";
 
     if (isClosed) {
         return unclosedTag + content + "</" + tagName + ">";
