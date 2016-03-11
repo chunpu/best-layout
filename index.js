@@ -1,5 +1,6 @@
 var SimpleMarkdown = require('simple-markdown')
-var _ = require('lodash')
+var _ = require('min-util')
+var is = _.is
 var debug = require('debug')('best-layout')
 
 var mdParse = SimpleMarkdown.defaultBlockParse
@@ -7,9 +8,10 @@ var mdOutput = SimpleMarkdown.defaultOutput
 var rules = SimpleMarkdown.defaultRules
 
 var lineHeight = 1.6
-var textFontSize = '16px'
+var size = 16
+var textFontSize = size + 'px'
 var headFontSize = '20px'
-var themeColor = 'green'
+var themeColor = '#6dac2a'
 var textColor = '#333'
 var lightTextColor = '#888'
 var serif = ''
@@ -21,14 +23,23 @@ var codeFontFamily = "Consolas, 'Liberation Mono', Menlo, Courier, monospace"
 
 // https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
 // heading hr codeBlock blockQuote list table newline paragraph link image strong u em del inlineCode br text
-// important: heading paragraph strong inlineCode blockQuote
+// important: heading paragraph strong inlineCode blockQuote text
 
 var modernRules = {
 	// weixin mail?
-	paragraph: {
+	text: {
 		html: function(node, output, state) {
+			var ret = node.content + ''
+			ret = ret.replace(/\n/g, '<br>')
+			return ret
+		}
+	}
+	, paragraph: {
+		html: function(node, output, state) {
+			var margin = size
 			var style = {
 				  color: textColor
+				, margin: margin + 'px 0'
 				, 'line-height': lineHeight
 				, 'font-size': textFontSize
 				, 'font-family': fontFamily
@@ -44,7 +55,7 @@ var modernRules = {
 				  color: themeColor
 				, 'line-height': lineHeight
 				, 'font-size': headFontSize
-				// , 'font-family': fontFamily + ", 'Helvetica Neue'"
+				, 'font-family': fontFamily
 				, 'font-weight': 'bold'
 			}
 			var raw = htmlTag('h' + node.level, output(node.content, state), {style: getCSSText(style)})
@@ -63,9 +74,24 @@ var modernRules = {
 	, blockQuote: {
 		html: function(node, output, state) {
 			var style = {
-				border: '1px solid red'
+				margin: 0,
+				padding: '1px ' + size + 'px',
+				'border-color': themeColor,
+				'border-left-width': '6px',
+				'border-style': 'none none none solid',
+				'box-shadow': 'rgb(153, 153, 153) 1px 1px 2px',
+				'background-color': '#f3f3f3'
 			}
 			return htmlTag('blockquote', output(node.content, state), {style: getCSSText(style)})
+		}
+	}
+	, strong: {
+		html: function(node, output, state) {
+			var style = {
+				color: themeColor,
+				'font-weight': 'normal'
+			}
+			return htmlTag('strong', output(node.content, state), {style: getCSSText(style)})
 		}
 	}
 }
@@ -105,16 +131,29 @@ var oldRules = {
 // console.log(aaa)
 
 rules = getBestRules(rules, modernRules)
-console.log(rules)
+// console.log(rules)
 // console.log(rules.paragraph.html)
 
 var htmlOutput = SimpleMarkdown.htmlFor(SimpleMarkdown.ruleOutput(rules, 'html'))
 
 exports.getHTML = function(markdown) {
 	var syntaxTree = mdParse(markdown)
+
 	// console.log(JSON.stringify(syntaxTree, 0, 4))
+	normalizeAST(syntaxTree)
 	var html = htmlOutput(syntaxTree)
 	return html
+}
+
+function normalizeAST(content, parent) {
+	if (is.array(content)) {
+		_.each(content, function(one) {
+			if (is.obj(one) && parent) {
+				one.parent = parent.type
+			}
+			normalizeAST(one.content, one)
+		})
+	}
 }
 
 function getBestRules(rules, customRules) {
@@ -127,6 +166,10 @@ function getBestRules(rules, customRules) {
 
 function getCSSText(obj) {
 	return _.map(_.keys(obj), function(key) {
+		var val = obj[key]
+		if ('' === val || null == val) {
+			return ''
+		}
 		return key + ':' + obj[key]
 	}).join(';')
 }
@@ -136,7 +179,9 @@ function htmlTag(tagName, content, attr, isClosed) {
     isClosed = typeof isClosed !== 'undefined' ? isClosed : true;
 	attr = _.map(_.keys(attr), function(key) {
 		var val = attr[key]
-		val = val.replace(/"/g, '\\"')
+		if ('' == val || null == val) {
+			return ''
+		}
 		return key + '="' + val + '"'
 	}).join(' ')
 
