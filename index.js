@@ -51,16 +51,26 @@ var modernRules = {
 	}
 	, heading: {
 		html: function(node, output, state) {
-			var style = {
+			var inlineStyle = {
 				  color: themeColor
 				, 'line-height': lineHeight
-				, 'font-size': headFontSize
+				, 'font-size': textFontSize
 				, 'font-family': fontFamily
 				, 'font-weight': 'bold'
+				, 'background-color': themeColor
+				, color: '#fff'
+				, 'border-radius': '3px'
+				, 'display': 'inline-block'
+				, 'box-shadow': 'rgb(165, 165, 165) 1px 1px 2px'
+				, padding: size / 2 + 'px'
 			}
-			var raw = htmlTag('h' + node.level, output(node.content, state), {style: getCSSText(style)})
+			var blockStyle = {
+				margin: size * 2 + 'px ' + '0 ' + size + 'px 0'
+			}
+			var inline = htmlTag('span', output(node.content, state), {style: getCSSText(inlineStyle)})
+			var block = htmlTag('h' + node.level, inline, {style: getCSSText(blockStyle)})
 			// var raw = htmlTag('section', output(node.content, state), {style: getCSSText(style)})
-			return raw
+			return block
 		}
 	}
 	, inlineCode: {
