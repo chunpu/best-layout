@@ -84,7 +84,7 @@ var modernRules = {
 	, blockQuote: {
 		html: function(node, output, state) {
 			var style = {
-				margin: 0,
+				margin: '15px',
 				padding: '1px ' + size + 'px',
 				'border-color': themeColor,
 				'border-left-width': '6px',
@@ -150,7 +150,8 @@ var oldRules = {
 // var aaa = getCSSText({'border': '1px solid red'})
 // console.log(aaa)
 
-rules = getBestRules(rules, oldRules)
+// rules = getBestRules(rules, oldRules)
+rules = getBestRules(rules, modernRules)
 // console.log(rules)
 // console.log(rules.paragraph.html)
 

@@ -45,9 +45,9 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var bestLayout = __webpack_require__(1)
-	var _ = __webpack_require__(3)
-	var Clipboard = __webpack_require__(8)
-	var debug = __webpack_require__(5)('best-layout:app')
+	var _ = __webpack_require__(17)
+	var Clipboard = __webpack_require__(19)
+	var debug = __webpack_require__(14)('best-layout:app')
 
 	$(init)
 
@@ -60,9 +60,9 @@
 
 		var evName = 'keyup'
 
-		var demoMarkdown = __webpack_require__(17)
-		var template = __webpack_require__(18)
-		var css = __webpack_require__(19)
+		var demoMarkdown = __webpack_require__(28)
+		var template = __webpack_require__(29)
+		var css = __webpack_require__(30)
 		console.log(css)
 
 
@@ -73,16 +73,6 @@
 			var doc = template.replace('{{html}}', html).replace('{{css}}', css)
 			$iframe.attr('srcdoc', doc)
 		}, 800, {leading: true, trailing: true, maxWait: 3000})).val(demoMarkdown).trigger(evName)
-
-		/*
-		new Clipboard('#copy', {
-			text: function(trigger) {
-				console.log(trigger)
-				debugger
-				return '<h1>xxxx</h1>'
-			}
-		})
-		*/
 
 		var $doc = $(document)
 		$doc.on('copy', function(e) {
@@ -105,49 +95,213 @@
 
 	var SimpleMarkdown = __webpack_require__(2)
 	var _ = __webpack_require__(3)
-	var debug = __webpack_require__(5)('best-layout')
+	var is = _.is
+	var debug = __webpack_require__(14)('best-layout')
 
 	var mdParse = SimpleMarkdown.defaultBlockParse
 	var mdOutput = SimpleMarkdown.defaultOutput
 	var rules = SimpleMarkdown.defaultRules
-	rules = getBestRules(rules)
-	console.log(rules)
+
+	var lineHeight = 1.6
+	var size = 16
+	var textFontSize = size + 'px'
+	var headFontSize = '20px'
+	var themeColor = '#6dac2a'
+	var textColor = '#333'
+	var lightTextColor = '#888'
+	var serif = ''
+	var sansSerif = 'Helvetica, Arial, 微软雅黑, SimSun, Song, sans-serif'
+	// var fontFamily = "'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif"
+	var fontFamily = 'Helvetica Neue, Arial, Hiragino Sans GB, STHeiti, Microsoft YaHei, WenQuanYi Micro Hei, SimSun, Song, sans-serif'
+	var fontFamily = ""
+	var codeFontFamily = "Consolas, 'Liberation Mono', Menlo, Courier, monospace"
+
+	// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
+	// heading hr codeBlock blockQuote list table newline paragraph link image strong u em del inlineCode br text
+	// important: heading paragraph strong inlineCode blockQuote text
+
+	var modernRules = {
+		// weixin mail?
+		text: {
+			html: function(node, output, state) {
+				var ret = node.content + ''
+				ret = ret.replace(/\n/g, '<br>')
+				return ret
+			}
+		}
+		, paragraph: {
+			html: function(node, output, state) {
+				var margin = size
+				var style = {
+					  color: textColor
+					, margin: margin + 'px 0'
+					, 'line-height': lineHeight
+					, 'font-size': textFontSize
+					, 'font-family': fontFamily
+					, 'font-weight': 'normal'
+				}
+				var raw = htmlTag('p', output(node.content, state), {style: getCSSText(style)})
+				return raw
+			}
+		}
+		, heading: {
+			html: function(node, output, state) {
+				var inlineStyle = {
+					  color: themeColor
+					, 'line-height': lineHeight
+					, 'font-size': textFontSize
+					, 'font-family': fontFamily
+					, 'font-weight': 'bold'
+					, 'background-color': themeColor
+					, color: '#fff'
+					, 'border-radius': '3px'
+					, 'display': 'inline-block'
+					, 'box-shadow': 'rgb(165, 165, 165) 1px 1px 2px'
+					, padding: size / 2 + 'px'
+				}
+				var blockStyle = {
+					margin: size * 2 + 'px ' + '0 ' + size + 'px 0'
+				}
+				var inline = htmlTag('span', output(node.content, state), {style: getCSSText(inlineStyle)})
+				var block = htmlTag('h' + node.level, inline, {style: getCSSText(blockStyle)})
+				// var raw = htmlTag('section', output(node.content, state), {style: getCSSText(style)})
+				return block
+			}
+		}
+		, inlineCode: {
+			html: function(node, output, state) {
+				var style = {
+					// 'font-family': codeFontFamily
+				}
+				return htmlTag('code', node.content, {style: getCSSText(style)})
+			}
+		}
+		, blockQuote: {
+			html: function(node, output, state) {
+				var style = {
+					margin: '10px',
+					padding: '1px ' + size + 'px',
+					'border-color': themeColor,
+					'border-left-width': '6px',
+					'border-style': 'none none none solid',
+					'box-shadow': 'rgb(153, 153, 153) 1px 1px 2px',
+					'background-color': '#f3f3f3'
+				}
+				return htmlTag('blockquote', output(node.content, state), {style: getCSSText(style)})
+			}
+		}
+		, strong: {
+			html: function(node, output, state) {
+				var style = {
+					color: themeColor,
+					'font-weight': 'normal'
+				}
+				return htmlTag('strong', output(node.content, state), {style: getCSSText(style)})
+			}
+		}
+	}
+
+	var oldRules = {
+		// discuz
+		// font support `style="background-color: xxx"`
+		text: {
+			html: function(node, output, state) {
+				var ret = node.content + ''
+				ret = ret.replace(/\n/g, '<br>')
+				return ret
+			}
+		}
+		, paragraph: {
+			html: function(node, output, state) {
+				var font = htmlTag('font', output(node.content, state), {face: fontFamily, size: 3, color: textColor})
+				return htmlTag('div', font) + '<br>'
+			}
+		}
+		, heading: {
+			html: function(node, output, state) {
+				var font = htmlTag('font', output(node.content, state), {face: fontFamily, size: 4, color: themeColor})
+				var strong = htmlTag('strong', font)
+				return '<br>' + htmlTag('div', strong) + '<br>'
+			}
+		}
+		, inlineCode: {
+			html: function(node, output, state) {
+				return htmlTag('font', node.content, {face: codeFontFamily})
+			}
+		}
+		, blockQuote: {
+			html: function(node, output, state) {
+				return htmlTag('blockquote', output(node.content, state), {})
+			}
+		}
+		, strong: {
+			html: function(node, output, state) {
+				var font = htmlTag('font', output(node.content, state), {color: themeColor})
+				return htmlTag('strong', font)
+			}
+		}
+	}
+
+	// var aaa = getCSSText({'border': '1px solid red'})
+	// console.log(aaa)
+
+	// rules = getBestRules(rules, oldRules)
+	rules = getBestRules(rules, modernRules)
+	// console.log(rules)
 	// console.log(rules.paragraph.html)
 
 	var htmlOutput = SimpleMarkdown.htmlFor(SimpleMarkdown.ruleOutput(rules, 'html'))
 
 	exports.getHTML = function(markdown) {
 		var syntaxTree = mdParse(markdown)
+
 		// console.log(JSON.stringify(syntaxTree, 0, 4))
+		normalizeAST(syntaxTree)
 		var html = htmlOutput(syntaxTree)
 		return html
 	}
 
-	function getBestRules(rules) {
-		// https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js#L546
-		rules = _.extend({}, rules)
-
-		rules.paragraph.html = function(node, output, state) {
-			return htmlTag('p', output(node.content, state))
+	function normalizeAST(content, parent) {
+		if (is.array(content)) {
+			_.each(content, function(one) {
+				if (is.obj(one) && parent) {
+					one.parent = parent.type
+				}
+				normalizeAST(one.content, one)
+			})
 		}
-		return rules
 	}
 
-	function htmlTag(tagName, content, attributes, isClosed) {
+	function getBestRules(rules, customRules) {
+		var ret = {}
+		_.forIn(rules, function(val, key) {
+			ret[key] = _.extend({}, val, customRules[key])
+		})
+		return ret
+	}
+
+	function getCSSText(obj) {
+		return _.map(_.keys(obj), function(key) {
+			var val = obj[key]
+			if ('' === val || null == val) {
+				return ''
+			}
+			return key + ':' + obj[key]
+		}).join(';')
+	}
+
+	function htmlTag(tagName, content, attr, isClosed) {
 		// copy from simple-markdown
-	    attributes = attributes || {};
 	    isClosed = typeof isClosed !== 'undefined' ? isClosed : true;
+		attr = _.map(_.keys(attr), function(key) {
+			var val = attr[key]
+			if ('' == val || null == val) {
+				return ''
+			}
+			return key + '="' + val + '"'
+		}).join(' ')
 
-	    var attributeString = "";
-	    for (var attr in attributes) {
-	        // Removes falsey attributes
-	        if (Object.prototype.hasOwnProperty.call(attributes, attr) &&
-	                attributes[attr]) {
-	            attributeString += " " + attr + '="' + attributes[attr] + '"';
-	        }
-	    }
-
-	    var unclosedTag = "<" + tagName + attributeString + ">";
+	    var unclosedTag = "<" + tagName + ' ' + attr + ">";
 
 	    if (isClosed) {
 	        return unclosedTag + content + "</" + tagName + ">";
@@ -1552,6 +1706,1751 @@
 
 /***/ },
 /* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(4)
+
+	/* webpack only
+	if (DEBUG && global.console) {
+		console.debug('debug mode')
+	}
+	*/
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var cou = __webpack_require__(5)
+
+	module.exports = cou.extend(_, cou)
+
+	__webpack_require__(7)
+	__webpack_require__(8)
+	__webpack_require__(9)
+	__webpack_require__(11)
+	__webpack_require__(12)
+	__webpack_require__(13)
+
+	_.mixin(_, _)
+
+	function _(val) {
+		if (!(this instanceof _)) return new _(val)
+		this.__value = val
+		this.__chain = false
+	}
+
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var is = __webpack_require__(6)
+
+	var slice = [].slice
+
+	var _ = exports
+
+	_.is = is
+
+	_.extend = _.assign = extend
+
+	_.each = each
+
+	_.map = function(arr, fn) {
+		var ret = []
+		each(arr, function(item, i, arr) {
+			ret[i] = fn(item, i, arr)
+		})
+		return ret
+	}
+
+	_.filter = function(arr, fn) {
+		var ret = []
+		each(arr, function(item, i, arr) {
+			var val = fn(item, i, arr)
+			if (val) ret.push(item)
+		})
+		return ret
+	}
+
+	_.some = function(arr, fn) {
+		return -1 != findIndex(arr, fn)
+	}
+
+	_.every = function(arr, fn) {
+		return -1 == findIndex(arr, negate(fn))
+	}
+
+	_.reduce = reduce
+
+	_.findIndex = findIndex
+
+	_.find = function(arr, fn) {
+		var index = _.findIndex(arr, fn)
+		if (-1 != index) {
+			return arr[index]
+		}
+	}
+
+	_.indexOf = indexOf
+
+	_.includes = function(val, sub) {
+		return -1 != indexOf(val, sub)
+	}
+
+	_.toArray = toArray
+
+	_.slice = function(arr, start, end) {
+		// support array and string
+		var ret = [] // default return array
+		var len = getLength(arr)
+		if (len >= 0) {
+			start = start || 0
+			end = end || len
+			// raw array and string use self slice
+			if (!is.fn(arr.slice)) {
+				arr = toArray(arr)
+			}
+			ret = arr.slice(start, end)
+		}
+		return ret
+	}
+
+	_.negate = negate
+
+	_.forIn = forIn
+
+	_.keys = keys
+
+	var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g
+
+	_.trim = function(str) {
+		if (null == str) return ''
+		return ('' + str).replace(rtrim, '')
+	}
+
+	_.noop = function() {}
+
+	_.len = getLength
+
+	function getLength(arr) {
+		if (null != arr) return arr.length
+	}
+
+	function each(arr, fn) {
+		var len = getLength(arr)
+		if (len && is.fn(fn)) {
+			for (var i = 0; i < len; i++) {
+				if (false === fn(arr[i], i, arr)) break
+			}
+		}
+		return arr
+	}
+
+	function findIndex(arr, fn) {
+		var ret = -1
+		each(arr, function(item, i, arr) {
+			if (fn(item, i, arr)) {
+				ret = i
+				return false
+			}
+		})
+		return ret
+	}
+
+	function toArray(arr) {
+		var ret = []
+		each(arr, function(item) {
+			ret.push(item)
+		})
+		return ret
+	}
+
+
+	function extend(target) {
+		if (target) {
+			var sources = slice.call(arguments, 1)
+			each(sources, function(src) {
+				forIn(src, function(val, key) {
+					if (!is.undef(val)) {
+						target[key] = val
+					}
+				})
+			})
+		}
+		return target
+	}
+
+	function negate(fn) {
+		return function() {
+			return !fn.apply(this, arguments)
+		}
+	}
+
+	function indexOf(val, sub) {
+		if (is.str(val)) return val.indexOf(sub)
+
+		return findIndex(val, function(item) {
+			// important!
+			return sub === item
+		})
+	}
+
+	function reduce(arr, fn, prev) {
+		each(arr, function(item, i) {
+			prev = fn(prev, item, i, arr)
+		})
+		return prev
+	}
+
+	function forIn(hash, fn) {
+		if (hash) {
+			for (var key in hash) {
+				if (is.owns(hash, key)) {
+					if (false === fn(hash[key], key, hash)) break
+				}
+			}
+		}
+		return hash
+	}
+
+	function keys(hash) {
+		var ret = []
+		forIn(hash, function(val, key) {
+			ret.push(key)
+		})
+		return ret
+	}
+
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {var is = exports
+
+	var obj = Object.prototype
+
+	var navigator = global.navigator
+
+	// reserved words in es3
+	// instanceof null undefined arguments boolean false true function int
+
+	is.browser = (function() {
+		return global.window == global
+	})()
+
+	// simple modern browser detect
+	is.h5 = (function() {
+		if (is.browser && navigator.geolocation) {
+			return true
+		}
+		return false
+	})()
+
+	is.mobile = (function() {
+		if (is.browser && /mobile/i.test(navigator.userAgent)) {
+			return true
+		}
+		return false
+	})()
+
+	function _class(val) {
+		var name = obj.toString.call(val)
+		// [object Class]
+		return name.substring(8, name.length - 1).toLowerCase()
+	}
+
+	function _type(val) {
+		// undefined object boolean number string symbol function
+		return typeof val
+	}
+
+	function owns(owner, key) {
+		return obj.hasOwnProperty.call(owner, key)
+	}
+
+	is._class = _class
+
+	is._type = _type
+
+	is.owns = owns
+
+	// not a number
+	is.nan = function(val) {
+		return val !== val
+	}
+
+	is.bool = function(val) {
+		return 'boolean' == _class(val)
+	}
+
+	is.infinite = function(val) {
+		return val == Infinity || val == -Infinity
+	}
+
+	is.num = is.number = function(num) {
+		return !isNaN(num) && 'number' == _class(num)
+	}
+
+	// integer or decimal
+	is.iod = function(val) {
+		if (is.num(val) && !is.infinite(val)) {
+			return true
+		}
+		return false
+	}
+
+	is.decimal = function(val) {
+		if (is.iod(val)) {
+			return 0 != val % 1
+		}
+		return false
+	}
+
+	is.integer = function(val) {
+		if (is.iod(val)) {
+			return 0 == val % 1
+		}
+		return false
+	}
+
+	// object or function
+	is.oof = function(val) {
+		if (val) {
+			var tp = _type(val)
+			return 'object' == tp || 'function' == tp
+		}
+		return false
+	}
+
+	// regexp should return object
+	is.obj = is.object = function(obj) {
+		return is.oof(obj) && 'function' != _class(obj)
+	}
+
+	is.hash = is.plainObject = function(hash) {
+		if (hash) {
+			if ('object' == _class(hash)) {
+				// old window is object
+				if (hash.nodeType || hash.setInterval) {
+					return false
+				}
+				return true
+			}
+		}
+		return false
+	}
+
+	is.undef = function(val) {
+		return 'undefined' == _type(val)
+	}
+
+	// host function should return function, e.g. alert
+	is.fn = function(fn) {
+		return 'function' == _class(fn)
+	}
+
+	is.str = is.string = function(str) {
+		return 'string' == _class(str)
+	}
+
+	// number or string
+	is.nos = function(val) {
+		return is.iod(val) || is.str(val)
+	}
+
+	is.array = function(arr) {
+		return 'array' == _class(arr)
+	}
+
+	is.arraylike = function(arr) {
+		// window has length for iframe too, but it is not arraylike
+		if (!is.window(arr) && is.obj(arr)) {
+			var len = arr.length
+			if (is.integer(len) && len >= 0) {
+				return true
+			}
+		}
+		return false
+	}
+
+	is.window = function(val) {
+		if (val && val.window == val) {
+			return true
+		}
+		return false
+	}
+
+	is.empty = function(val) {
+		if (is.str(val) || is.arraylike(val)) {
+			return 0 === val.length
+		}
+		if (is.hash(val)) {
+			for (var key in val) {
+				if (owns(val, key)) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	is.element = function(elem) {
+		if (elem && 1 === elem.nodeType) {
+			return true
+		}
+		return false
+	}
+
+	is.regexp = function(val) {
+		return 'regexp' == _class(val)
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+
+	var each = _.each
+	var includes = _.includes
+	var is = _.is
+	var proto = Array.prototype
+
+	_.reject = function(arr, fn) {
+		return _.filter(arr, function(val, i, arr) {
+			return !fn(val, i, arr)
+		})
+	}
+
+	_.without = function(arr) {
+		var other = _.slice(arguments, 1)
+		return _.difference(arr, other)
+	}
+
+	_.difference = function(arr, other) {
+		var ret = []
+		_.each(arr, function(val) {
+			if (!includes(other, val)) {
+				ret.push(val)
+			}
+		})
+		return ret
+	}
+
+	_.pluck = function(arr, key) {
+		return _.map(arr, function(item) {
+			if (item) return item[key]
+		})
+	}
+
+	_.size = function(arr) {
+		var len = _.len(arr)
+		if (null == len) {
+			len = _.keys(arr).length
+		}
+		return len
+	}
+
+	_.first = function(arr) {
+		if (arr) return arr[0]
+	}
+
+	_.last = function(arr) {
+		var len = _.len(arr)
+		if (len) {
+			return arr[len - 1]
+		}
+	}
+
+	_.asyncMap = function(arr, fn, cb) {
+		// desperate
+		var ret = []
+		var count = 0
+		var hasDone, hasStart
+
+		each(arr, function(arg, i) {
+			hasStart = true
+			fn(arg, function(err, val) {
+				if (hasDone) return
+				count++
+				if (err) {
+					hasDone = true
+					return cb(err)
+				}
+				ret[i] = val
+				if (count == arr.length) {
+					hasDone = true
+					cb(null, ret)
+				}
+			})
+		})
+
+		if (!hasStart) cb(null) // empty
+	}
+
+	_.uniq = function(arr) {
+		var ret = []
+		each(arr, function(item) {
+			if (!includes(ret, item)) ret.push(item)
+		})
+		return ret
+	}
+
+	_.flatten = function(arrs) {
+		var ret = []
+		each(arrs, function(arr) {
+			if (is.arraylike(arr)) {
+				each(arr, function(item) {
+					ret.push(item)
+				})
+			} else ret.push(arr)
+		})
+		return ret
+	}
+
+	_.union = function() {
+		return _.uniq(_.flatten(arguments))
+	}
+
+	_.sample = function(arr, n) {
+		var ret = _.toArray(arr)
+		var len = ret.length
+		var need = Math.min(n || 1, len)
+		for (var i = 0; i < len; i++) {
+			var rand = _.random(i, len - 1)
+			var tmp = ret[rand]
+			ret[rand] = ret[i]
+			ret[i] = tmp
+		}
+		ret.length = need
+		if (null == n) {
+			return ret[0]
+		}
+		return ret
+	}
+
+	_.shuffle = function(arr) {
+		return _.sample(arr, Infinity)
+	}
+
+	_.compact = function(arr) {
+		return _.filter(arr, _.identity)
+	}
+
+	_.rest = function(arr) {
+		return _.slice(arr, 1)
+	}
+
+	_.invoke = function() {
+		var args = arguments
+		var arr = args[0]
+		var fn = args[1]
+		var isFunc = is.fn(fn)
+		args = _.slice(args, 2)
+
+		return _.map(arr, function(item) {
+			if (isFunc) {
+				return fn.apply(item, args)
+			}
+			if (null != item) {
+				var method = item[fn]
+				if (is.fn(method)) {
+					return method.apply(item, args)
+				}
+			}
+		})
+	}
+
+	_.partition = function(arr, fn) {
+		var hash = _.groupBy(arr, function(val, i, arr) {
+			var ret = fn(val, i, arr)
+			if (ret) return 1
+			return 2
+		})
+		return [hash[1] || [], hash[2] || []]
+	}
+
+	_.groupBy = function(arr, fn) {
+		var hash = {}
+		_.each(arr, function(val, i, arr) {
+			var ret = fn(val, i, arr)
+			hash[ret] = hash[ret] || []
+			hash[ret].push(val)
+		})
+		return hash
+	}
+
+	_.range = function() {
+		var args = arguments
+		if (args.length < 2) {
+			return _.range(args[1], args[0])
+		}
+		var start = args[0] || 0
+		var last = args[1] || 0
+		var step = args[2]
+		if (!is.num(step)) {
+			step = 1
+		}
+		var count = last - start
+		if (0 != step) {
+			count = count / step
+		}
+		var ret = []
+		var val = start
+		for (var i = 0; i < count; i++) {
+			ret.push(val)
+			val += step
+		}
+		return ret
+	}
+
+	_.pullAt = function(arr) {
+		// `_.at` but mutate
+		var indexes = _.slice(arguments, 1)
+		return mutateDifference(arr, indexes)
+	}
+
+	function mutateDifference(arr, indexes) {
+		var ret = []
+		var len = _.len(indexes)
+		if (len) {
+			indexes = indexes.sort(function(a, b) {
+				return a - b
+			})
+			while (len--) {
+				var index = indexes[len]
+				ret.push(proto.splice.call(arr, index, 1)[0])
+			}
+		}
+		ret.reverse()
+		return ret
+	}
+
+	_.remove = function(arr, fn) {
+		// `_.filter` but mutate
+		var len = _.len(arr) || 0
+		var indexes = []
+		while (len--) {
+			if (fn(arr[len], len, arr)) {
+				indexes.push(len)
+			}
+		}
+		return mutateDifference(arr, indexes)
+	}
+
+	_.fill = function(val, start, end) {
+		// TODO
+	}
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+
+	var is = _.is
+	var each = _.each
+	var forIn = _.forIn
+
+	_.only = function(obj, keys) {
+		obj = obj || {}
+		if (is.str(keys)) keys = keys.split(/ +/)
+		return _.reduce(keys, function(ret, key) {
+			if (null != obj[key]) ret[key] = obj[key]
+			return ret
+		}, {})
+	}
+
+	_.values = function(obj) {
+		return _.map(_.keys(obj), function(key) {
+			return obj[key]
+		})
+	}
+
+	_.pick = function(obj, fn) {
+		if (!is.fn(fn)) {
+			return _.pick(obj, function(val, key) {
+				return key == fn
+			})
+		}
+		var ret = {}
+		forIn(obj, function(val, key, obj) {
+			if (fn(val, key, obj)) {
+				ret[key] = val
+			}
+		})
+		return ret
+	}
+
+	_.functions = function(obj) {
+		return _.keys(_.pick(obj, function(val) {
+			return is.fn(val)
+		}))
+	}
+
+	_.mapKeys = function(obj, fn) {
+		var ret = {}
+		forIn(obj, function(val, key, obj) {
+			var newKey = fn(val, key, obj)
+			ret[newKey] = val
+		})
+		return ret
+	}
+
+	_.mapObject = _.mapValues = function(obj, fn) {
+		var ret = {}
+		forIn(obj, function(val, key, obj) {
+			ret[key] = fn(val, key, obj)
+		})
+		return ret
+	}
+
+	// return value when walk through path, otherwise return empty
+	_.get = function(obj, path) {
+		path = toPath(path)
+		if (path.length) {
+			var flag = _.every(path, function(key) {
+				if (null != obj) { // obj can be indexed
+					obj = obj[key]
+					return true
+				}
+			})
+			if (flag) return obj
+		}
+	}
+
+	_.has = function(obj, path) {
+		path = toPath(path)
+		if (path.length) {
+			var flag = _.every(path, function(key) {
+				if (null != obj && is.owns(obj, key)) {
+					obj = obj[key]
+					return true
+				}
+			})
+			if (flag) return true
+		}
+		return false
+	}
+
+	_.set = function(obj, path, val) {
+		path = toPath(path)
+		var cur = obj
+		_.every(path, function(key, i) {
+			if (is.oof(cur)) {
+				if (i + 1 == path.length) {
+					cur[key] = val
+				} else {
+					var item = cur[key]
+					if (null == item) {
+						// fill value with {} or []
+						var item = {}
+						if (~~key == key) {
+							item = []
+						}
+					}
+					cur = cur[key] = item
+					return true
+				}
+			}
+		})
+		return obj
+	}
+
+	_.create = (function() {
+		function Object() {} // so it seems like Object.create
+		return function(proto, property) {
+			// not same as Object.create, Object.create(proto, propertyDescription)
+			if ('object' != typeof proto) {
+				// null is ok
+				proto = null
+			}
+			Object.prototype = proto
+			return _.extend(new Object, property)
+		}
+	})()
+
+	_.defaults = function() {
+		var args = arguments
+		var target = args[0]
+		var sources = _.slice(args, 1)
+		if (target) {
+			_.each(sources, function(src) {
+				_.mapObject(src, function(val, key) {
+					if (is.undef(target[key])) {
+						target[key] = val
+					}
+				})
+			})
+		}
+		return target
+	}
+
+	_.isMatch = function(obj, src) {
+		var ret = true
+		obj = obj || {}
+		forIn(src, function(val, key) {
+			if (val !== obj[key]) {
+				ret = false
+				return false
+			}
+		})
+		return ret
+	}
+
+	_.toPlainObject = function(val) {
+		var ret = {}
+		forIn(val, function(val, key) {
+			ret[key] = val
+		})
+		return ret
+	}
+
+	_.invert = function(obj) {
+		var ret = {}
+		forIn(obj, function(val, key) {
+			ret[val] = key
+		})
+		return ret
+	}
+
+	// topath, copy from lodash
+
+	var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\n\\]|\\.)*?)\2)\]/g
+	var reEscapeChar = /\\(\\)?/g;
+
+	function toPath(val) {
+		if (is.array(val)) return val
+		var ret = []
+		_.tostr(val).replace(rePropName, function(match, number, quote, string) {
+			var item = number || match
+			if (quote) {
+				item = string.replace(reEscapeChar, '$1')
+			}
+			ret.push(item)
+		})
+		return ret
+	}
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+
+	var is = _.is
+	var slice = _.slice
+
+	_.bind = function(fn, ctx) {
+		if (is.str(ctx)) {
+			var obj = fn
+			fn = obj[ctx]
+			ctx = obj
+		}
+		if (!is.fn(fn)) return fn
+		var args = slice(arguments, 2)
+		ctx = ctx || this
+		return function() {
+			return fn.apply(ctx, _.flatten([args, arguments]))
+		}
+	}
+
+	// from lang.js `Function.prototype.inherits`
+	// so belong to function
+	_.inherits = function(ctor, superCtor) {
+		ctor.super_ = superCtor
+		ctor.prototype = _.create(superCtor.prototype, {
+			constructor: ctor
+		})
+	}
+
+	_.delay = function(fn, wait) {
+		var args = _.slice(arguments, 2)
+		return setTimeout(function() {
+			fn.apply(this, args)
+		}, wait)
+	}
+
+	_.before = function(n, fn) {
+		return function() {
+			if (n > 1) {
+				n--
+				return fn.apply(this, arguments)
+			}
+		}
+	}
+
+	_.once = function(fn) {
+		return _.before(2, fn)
+	}
+
+	_.after = function(n, fn) {
+		return function() {
+			if (n > 1) {
+				n--
+			} else {
+				return fn.apply(this, arguments)
+			}
+		}
+	}
+
+	_.throttle = function(fn, wait, opt) {
+		wait = wait || 0
+		opt = _.extend({
+			leading: true,
+			trailing: true,
+			maxWait: wait
+		}, opt)
+		return _.debounce(fn, wait, opt)
+	}
+
+	_.debounce = function(fn, wait, opt) {
+		wait = wait || 0
+		opt = _.extend({
+			leading: false,
+			trailing: true
+		}, opt)
+		var maxWait = opt.maxWait
+		var lastExec = 0 // wait
+		var lastCall = 0 // just for maxWait
+		var now = _.now()
+		var timer
+
+		if (!opt.leading) {
+			lastExec = now
+		}
+
+		function ifIsCD() {
+			if (now - lastExec > wait) return false
+			if (maxWait && now - lastCall > maxWait) return false
+			return true
+		}
+
+		function exec(fn, ctx, args) {
+			lastExec = _.now() // update last exec
+			return fn.apply(ctx, args)
+		}
+
+		function cancel() {
+			if (timer) {
+				clearTimeout(timer)
+				timer = null
+			}
+		}
+
+		function debounced() {
+			now = _.now() // update now
+			var isCD = ifIsCD()
+			lastCall = now // update last call
+			var me = this
+			var args = arguments
+
+			cancel()
+
+			if (!isCD) {
+				exec(fn, me, args)
+			} else {
+				if (opt.trailing) {
+					timer = _.delay(function() {
+						exec(fn, me, args)
+					}, wait)
+				}
+			}
+		}
+
+		debounced.cancel = cancel
+
+		return debounced
+	}
+
+	function memoize(fn) {
+		var cache = new memoize.Cache
+		function memoized() {
+			var args = arguments
+			var key = args[0]
+			if (!cache.has(key)) {
+				var ret = fn.apply(this, args)
+				cache.set(key, ret)
+			}
+			return cache.get(key)
+		}
+		memoized.cache = cache
+		return memoized
+	}
+
+	memoize.Cache = __webpack_require__(10)
+
+	_.memoize = memoize
+
+	_.wrap = function(val, fn) {
+		return function() {
+			var args = [val]
+			args.push.apply(args, arguments)
+			return fn.apply(this, args)
+		}
+	}
+
+	_.curry = function(fn) {
+		var len = fn.length
+		return setter([])
+
+		function setter(args) {
+			return function() {
+				var arr = args.concat(_.slice(arguments))
+				if (arr.length >= len) {
+					arr.length = len
+					return fn.apply(this, arr)
+				}
+				return setter(arr)
+			}
+		}
+	}
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(4)
+	var is = _.is
+
+	module.exports = Cache
+
+	function Cache() {
+		this.data = {}
+	}
+
+	var proto = Cache.prototype
+
+	proto.has = function(key) {
+		return is.owns(this.data, key)
+	}
+
+	proto.get = function(key) {
+		return this.data[key]
+	}
+
+	proto.set = function(key, val) {
+		this.data[key] = val
+	}
+
+	proto['delete'] = function(key) {
+		delete this.data[key]
+	}
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+	var is = _.is
+
+	_.now = function() {
+		return +new Date
+	}
+
+	_.constant = function(val) {
+		return function() {
+			return val
+		}
+	}
+
+	_.identity = function(val) {
+		return val
+	}
+
+	_.random = function(min, max) {
+		return min + Math.floor(Math.random() * (max - min + 1))
+	}
+
+	_.mixin = function(dst, src, opt) {
+		var keys = _.functions(src)
+		if (dst) {
+			if (is.fn(dst)) {
+				opt = opt || {}
+				var isChain = !!opt.chain
+				// add to prototype
+				var proto = dst.prototype
+				_.each(keys, function(key) {
+					var fn = src[key]
+					proto[key] = function() {
+						var me = this
+						var args = [me.__value]
+						args.push.apply(args, arguments)
+						var ret = fn.apply(me, args)
+						if (me.__chain) {
+							me.__value = ret
+							return me
+						}
+						return ret
+					}
+				})
+			} else {
+				_.each(keys, function(key) {
+					dst[key] = src[key]
+				})
+			}
+		}
+		return dst
+	}
+
+	_.chain = function(val) {
+		var ret = _(val)
+		ret.__chain = true
+		return ret
+	}
+
+	_.value = function() {
+		this.__chain = false
+		return this.__value
+	}
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+
+	_.tostr = tostr
+
+	var indexOf = _.indexOf
+
+	_.capitalize = function(str) {
+		str = tostr(str)
+		return str.charAt(0).toUpperCase() + str.substr(1)
+	}
+
+	_.decapitalize = function(str) {
+		str = tostr(str)
+		return str.charAt(0).toLowerCase() + str.substr(1)
+	}
+
+	_.camelCase = function(str) {
+		str = tostr(str)
+		var arr = str.split(/[^\w]|_+/)
+		arr = _.map(arr, function(val) {
+			return _.capitalize(val)
+		})
+		return _.decapitalize(arr.join(''))
+	}
+
+	_.startsWith = function(str, val) {
+		return 0 == indexOf(str, val)
+	}
+
+	_.endsWith = function(str, val) {
+		val += '' // null => 'null'
+		return val == _.slice(str, _.len(str) - _.len(val))
+	}
+
+	_.lower = function(str) {
+		return tostr(str).toLowerCase()
+	}
+
+	_.upper = function(str) {
+		return tostr(str).toUpperCase()
+	}
+
+	_.repeat = function(str, count) {
+		return _.map(_.range(count), function() {
+			return str
+		}).join('')
+	}
+
+	_.padLeft = function(str, len, chars) {
+		str = _.tostr(str)
+		len = len || 0
+		var delta = len - str.length
+		return getPadStr(chars, delta) + str
+	}
+
+	_.padRight = function(str, len, chars) {
+		str = _.tostr(str)
+		len = len || 0
+		var delta = len - str.length
+		return str + getPadStr(chars, delta)
+	}
+
+	function getPadStr(chars, len) {
+		chars = _.tostr(chars) || ' ' // '' will never end
+		var count = Math.floor(len / chars.length) + 1
+		return _.repeat(chars, count).slice(0, len)
+	}
+
+	function tostr(str) {
+		if (str || 0 == str) return str + ''
+		return ''
+	}
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = module.exports = __webpack_require__(4)
+
+	_.sum = function(arr) {
+		return _.reduce(arr, function(sum, val) {
+			return sum + val
+		}, 0)
+	}
+
+	_.max = function(arr, fn) {
+		var index = -1
+		var data = -Infinity
+		fn = fn || _.identity
+		_.each(arr, function(val, i) {
+			val = fn(val)
+			if (val > data) {
+				data = val
+				index = i
+			}
+		})
+		if (index > -1) {
+			return arr[index]
+		}
+		return data
+	}
+
+	_.min = function(arr, fn) {
+		var index = -1
+		var data = Infinity
+		fn = fn || _.identity
+		_.each(arr, function(val, i) {
+			val = fn(val)
+			if (val < data) {
+				data = val
+				index = i
+			}
+		})
+		if (index > -1) {
+			return arr[index]
+		}
+		return data
+	}
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * This is the web browser implementation of `debug()`.
+	 *
+	 * Expose `debug()` as the module.
+	 */
+
+	exports = module.exports = __webpack_require__(15);
+	exports.log = log;
+	exports.formatArgs = formatArgs;
+	exports.save = save;
+	exports.load = load;
+	exports.useColors = useColors;
+	exports.storage = 'undefined' != typeof chrome
+	               && 'undefined' != typeof chrome.storage
+	                  ? chrome.storage.local
+	                  : localstorage();
+
+	/**
+	 * Colors.
+	 */
+
+	exports.colors = [
+	  'lightseagreen',
+	  'forestgreen',
+	  'goldenrod',
+	  'dodgerblue',
+	  'darkorchid',
+	  'crimson'
+	];
+
+	/**
+	 * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+	 * and the Firebug extension (any Firefox version) are known
+	 * to support "%c" CSS customizations.
+	 *
+	 * TODO: add a `localStorage` variable to explicitly enable/disable colors
+	 */
+
+	function useColors() {
+	  // is webkit? http://stackoverflow.com/a/16459606/376773
+	  return ('WebkitAppearance' in document.documentElement.style) ||
+	    // is firebug? http://stackoverflow.com/a/398120/376773
+	    (window.console && (console.firebug || (console.exception && console.table))) ||
+	    // is firefox >= v31?
+	    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+	    (navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31);
+	}
+
+	/**
+	 * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+	 */
+
+	exports.formatters.j = function(v) {
+	  return JSON.stringify(v);
+	};
+
+
+	/**
+	 * Colorize log arguments if enabled.
+	 *
+	 * @api public
+	 */
+
+	function formatArgs() {
+	  var args = arguments;
+	  var useColors = this.useColors;
+
+	  args[0] = (useColors ? '%c' : '')
+	    + this.namespace
+	    + (useColors ? ' %c' : ' ')
+	    + args[0]
+	    + (useColors ? '%c ' : ' ')
+	    + '+' + exports.humanize(this.diff);
+
+	  if (!useColors) return args;
+
+	  var c = 'color: ' + this.color;
+	  args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
+
+	  // the final "%c" is somewhat tricky, because there could be other
+	  // arguments passed either before or after the %c, so we need to
+	  // figure out the correct index to insert the CSS into
+	  var index = 0;
+	  var lastC = 0;
+	  args[0].replace(/%[a-z%]/g, function(match) {
+	    if ('%%' === match) return;
+	    index++;
+	    if ('%c' === match) {
+	      // we only are interested in the *last* %c
+	      // (the user may have provided their own)
+	      lastC = index;
+	    }
+	  });
+
+	  args.splice(lastC, 0, c);
+	  return args;
+	}
+
+	/**
+	 * Invokes `console.log()` when available.
+	 * No-op when `console.log` is not a "function".
+	 *
+	 * @api public
+	 */
+
+	function log() {
+	  // this hackery is required for IE8/9, where
+	  // the `console.log` function doesn't have 'apply'
+	  return 'object' === typeof console
+	    && console.log
+	    && Function.prototype.apply.call(console.log, console, arguments);
+	}
+
+	/**
+	 * Save `namespaces`.
+	 *
+	 * @param {String} namespaces
+	 * @api private
+	 */
+
+	function save(namespaces) {
+	  try {
+	    if (null == namespaces) {
+	      exports.storage.removeItem('debug');
+	    } else {
+	      exports.storage.debug = namespaces;
+	    }
+	  } catch(e) {}
+	}
+
+	/**
+	 * Load `namespaces`.
+	 *
+	 * @return {String} returns the previously persisted debug modes
+	 * @api private
+	 */
+
+	function load() {
+	  var r;
+	  try {
+	    r = exports.storage.debug;
+	  } catch(e) {}
+	  return r;
+	}
+
+	/**
+	 * Enable namespaces listed in `localStorage.debug` initially.
+	 */
+
+	exports.enable(load());
+
+	/**
+	 * Localstorage attempts to return the localstorage.
+	 *
+	 * This is necessary because safari throws
+	 * when a user disables cookies/localstorage
+	 * and you attempt to access it.
+	 *
+	 * @return {LocalStorage}
+	 * @api private
+	 */
+
+	function localstorage(){
+	  try {
+	    return window.localStorage;
+	  } catch (e) {}
+	}
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * This is the common logic for both the Node.js and web browser
+	 * implementations of `debug()`.
+	 *
+	 * Expose `debug()` as the module.
+	 */
+
+	exports = module.exports = debug;
+	exports.coerce = coerce;
+	exports.disable = disable;
+	exports.enable = enable;
+	exports.enabled = enabled;
+	exports.humanize = __webpack_require__(16);
+
+	/**
+	 * The currently active debug mode names, and names to skip.
+	 */
+
+	exports.names = [];
+	exports.skips = [];
+
+	/**
+	 * Map of special "%n" handling functions, for the debug "format" argument.
+	 *
+	 * Valid key names are a single, lowercased letter, i.e. "n".
+	 */
+
+	exports.formatters = {};
+
+	/**
+	 * Previously assigned color.
+	 */
+
+	var prevColor = 0;
+
+	/**
+	 * Previous log timestamp.
+	 */
+
+	var prevTime;
+
+	/**
+	 * Select a color.
+	 *
+	 * @return {Number}
+	 * @api private
+	 */
+
+	function selectColor() {
+	  return exports.colors[prevColor++ % exports.colors.length];
+	}
+
+	/**
+	 * Create a debugger with the given `namespace`.
+	 *
+	 * @param {String} namespace
+	 * @return {Function}
+	 * @api public
+	 */
+
+	function debug(namespace) {
+
+	  // define the `disabled` version
+	  function disabled() {
+	  }
+	  disabled.enabled = false;
+
+	  // define the `enabled` version
+	  function enabled() {
+
+	    var self = enabled;
+
+	    // set `diff` timestamp
+	    var curr = +new Date();
+	    var ms = curr - (prevTime || curr);
+	    self.diff = ms;
+	    self.prev = prevTime;
+	    self.curr = curr;
+	    prevTime = curr;
+
+	    // add the `color` if not set
+	    if (null == self.useColors) self.useColors = exports.useColors();
+	    if (null == self.color && self.useColors) self.color = selectColor();
+
+	    var args = Array.prototype.slice.call(arguments);
+
+	    args[0] = exports.coerce(args[0]);
+
+	    if ('string' !== typeof args[0]) {
+	      // anything else let's inspect with %o
+	      args = ['%o'].concat(args);
+	    }
+
+	    // apply any `formatters` transformations
+	    var index = 0;
+	    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
+	      // if we encounter an escaped % then don't increase the array index
+	      if (match === '%%') return match;
+	      index++;
+	      var formatter = exports.formatters[format];
+	      if ('function' === typeof formatter) {
+	        var val = args[index];
+	        match = formatter.call(self, val);
+
+	        // now we need to remove `args[index]` since it's inlined in the `format`
+	        args.splice(index, 1);
+	        index--;
+	      }
+	      return match;
+	    });
+
+	    if ('function' === typeof exports.formatArgs) {
+	      args = exports.formatArgs.apply(self, args);
+	    }
+	    var logFn = enabled.log || exports.log || console.log.bind(console);
+	    logFn.apply(self, args);
+	  }
+	  enabled.enabled = true;
+
+	  var fn = exports.enabled(namespace) ? enabled : disabled;
+
+	  fn.namespace = namespace;
+
+	  return fn;
+	}
+
+	/**
+	 * Enables a debug mode by namespaces. This can include modes
+	 * separated by a colon and wildcards.
+	 *
+	 * @param {String} namespaces
+	 * @api public
+	 */
+
+	function enable(namespaces) {
+	  exports.save(namespaces);
+
+	  var split = (namespaces || '').split(/[\s,]+/);
+	  var len = split.length;
+
+	  for (var i = 0; i < len; i++) {
+	    if (!split[i]) continue; // ignore empty strings
+	    namespaces = split[i].replace(/\*/g, '.*?');
+	    if (namespaces[0] === '-') {
+	      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+	    } else {
+	      exports.names.push(new RegExp('^' + namespaces + '$'));
+	    }
+	  }
+	}
+
+	/**
+	 * Disable debug output.
+	 *
+	 * @api public
+	 */
+
+	function disable() {
+	  exports.enable('');
+	}
+
+	/**
+	 * Returns true if the given mode name is enabled, false otherwise.
+	 *
+	 * @param {String} name
+	 * @return {Boolean}
+	 * @api public
+	 */
+
+	function enabled(name) {
+	  var i, len;
+	  for (i = 0, len = exports.skips.length; i < len; i++) {
+	    if (exports.skips[i].test(name)) {
+	      return false;
+	    }
+	  }
+	  for (i = 0, len = exports.names.length; i < len; i++) {
+	    if (exports.names[i].test(name)) {
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+
+	/**
+	 * Coerce `val`.
+	 *
+	 * @param {Mixed} val
+	 * @return {Mixed}
+	 * @api private
+	 */
+
+	function coerce(val) {
+	  if (val instanceof Error) return val.stack || val.message;
+	  return val;
+	}
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	/**
+	 * Helpers.
+	 */
+
+	var s = 1000;
+	var m = s * 60;
+	var h = m * 60;
+	var d = h * 24;
+	var y = d * 365.25;
+
+	/**
+	 * Parse or format the given `val`.
+	 *
+	 * Options:
+	 *
+	 *  - `long` verbose formatting [false]
+	 *
+	 * @param {String|Number} val
+	 * @param {Object} options
+	 * @return {String|Number}
+	 * @api public
+	 */
+
+	module.exports = function(val, options){
+	  options = options || {};
+	  if ('string' == typeof val) return parse(val);
+	  return options.long
+	    ? long(val)
+	    : short(val);
+	};
+
+	/**
+	 * Parse the given `str` and return milliseconds.
+	 *
+	 * @param {String} str
+	 * @return {Number}
+	 * @api private
+	 */
+
+	function parse(str) {
+	  str = '' + str;
+	  if (str.length > 10000) return;
+	  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
+	  if (!match) return;
+	  var n = parseFloat(match[1]);
+	  var type = (match[2] || 'ms').toLowerCase();
+	  switch (type) {
+	    case 'years':
+	    case 'year':
+	    case 'yrs':
+	    case 'yr':
+	    case 'y':
+	      return n * y;
+	    case 'days':
+	    case 'day':
+	    case 'd':
+	      return n * d;
+	    case 'hours':
+	    case 'hour':
+	    case 'hrs':
+	    case 'hr':
+	    case 'h':
+	      return n * h;
+	    case 'minutes':
+	    case 'minute':
+	    case 'mins':
+	    case 'min':
+	    case 'm':
+	      return n * m;
+	    case 'seconds':
+	    case 'second':
+	    case 'secs':
+	    case 'sec':
+	    case 's':
+	      return n * s;
+	    case 'milliseconds':
+	    case 'millisecond':
+	    case 'msecs':
+	    case 'msec':
+	    case 'ms':
+	      return n;
+	  }
+	}
+
+	/**
+	 * Short format for `ms`.
+	 *
+	 * @param {Number} ms
+	 * @return {String}
+	 * @api private
+	 */
+
+	function short(ms) {
+	  if (ms >= d) return Math.round(ms / d) + 'd';
+	  if (ms >= h) return Math.round(ms / h) + 'h';
+	  if (ms >= m) return Math.round(ms / m) + 'm';
+	  if (ms >= s) return Math.round(ms / s) + 's';
+	  return ms + 'ms';
+	}
+
+	/**
+	 * Long format for `ms`.
+	 *
+	 * @param {Number} ms
+	 * @return {String}
+	 * @api private
+	 */
+
+	function long(ms) {
+	  return plural(ms, d, 'day')
+	    || plural(ms, h, 'hour')
+	    || plural(ms, m, 'minute')
+	    || plural(ms, s, 'second')
+	    || ms + ' ms';
+	}
+
+	/**
+	 * Pluralization helper.
+	 */
+
+	function plural(ms, n, name) {
+	  if (ms < n) return;
+	  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
+	  return Math.ceil(ms / n) + ' ' + name + 's';
+	}
+
+
+/***/ },
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -16488,10 +18387,10 @@
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18)(module), (function() { return this; }())))
 
 /***/ },
-/* 4 */
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -16507,520 +18406,12 @@
 
 
 /***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * This is the web browser implementation of `debug()`.
-	 *
-	 * Expose `debug()` as the module.
-	 */
-
-	exports = module.exports = __webpack_require__(6);
-	exports.log = log;
-	exports.formatArgs = formatArgs;
-	exports.save = save;
-	exports.load = load;
-	exports.useColors = useColors;
-	exports.storage = 'undefined' != typeof chrome
-	               && 'undefined' != typeof chrome.storage
-	                  ? chrome.storage.local
-	                  : localstorage();
-
-	/**
-	 * Colors.
-	 */
-
-	exports.colors = [
-	  'lightseagreen',
-	  'forestgreen',
-	  'goldenrod',
-	  'dodgerblue',
-	  'darkorchid',
-	  'crimson'
-	];
-
-	/**
-	 * Currently only WebKit-based Web Inspectors, Firefox >= v31,
-	 * and the Firebug extension (any Firefox version) are known
-	 * to support "%c" CSS customizations.
-	 *
-	 * TODO: add a `localStorage` variable to explicitly enable/disable colors
-	 */
-
-	function useColors() {
-	  // is webkit? http://stackoverflow.com/a/16459606/376773
-	  return ('WebkitAppearance' in document.documentElement.style) ||
-	    // is firebug? http://stackoverflow.com/a/398120/376773
-	    (window.console && (console.firebug || (console.exception && console.table))) ||
-	    // is firefox >= v31?
-	    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-	    (navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31);
-	}
-
-	/**
-	 * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
-	 */
-
-	exports.formatters.j = function(v) {
-	  return JSON.stringify(v);
-	};
-
-
-	/**
-	 * Colorize log arguments if enabled.
-	 *
-	 * @api public
-	 */
-
-	function formatArgs() {
-	  var args = arguments;
-	  var useColors = this.useColors;
-
-	  args[0] = (useColors ? '%c' : '')
-	    + this.namespace
-	    + (useColors ? ' %c' : ' ')
-	    + args[0]
-	    + (useColors ? '%c ' : ' ')
-	    + '+' + exports.humanize(this.diff);
-
-	  if (!useColors) return args;
-
-	  var c = 'color: ' + this.color;
-	  args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
-
-	  // the final "%c" is somewhat tricky, because there could be other
-	  // arguments passed either before or after the %c, so we need to
-	  // figure out the correct index to insert the CSS into
-	  var index = 0;
-	  var lastC = 0;
-	  args[0].replace(/%[a-z%]/g, function(match) {
-	    if ('%%' === match) return;
-	    index++;
-	    if ('%c' === match) {
-	      // we only are interested in the *last* %c
-	      // (the user may have provided their own)
-	      lastC = index;
-	    }
-	  });
-
-	  args.splice(lastC, 0, c);
-	  return args;
-	}
-
-	/**
-	 * Invokes `console.log()` when available.
-	 * No-op when `console.log` is not a "function".
-	 *
-	 * @api public
-	 */
-
-	function log() {
-	  // this hackery is required for IE8/9, where
-	  // the `console.log` function doesn't have 'apply'
-	  return 'object' === typeof console
-	    && console.log
-	    && Function.prototype.apply.call(console.log, console, arguments);
-	}
-
-	/**
-	 * Save `namespaces`.
-	 *
-	 * @param {String} namespaces
-	 * @api private
-	 */
-
-	function save(namespaces) {
-	  try {
-	    if (null == namespaces) {
-	      exports.storage.removeItem('debug');
-	    } else {
-	      exports.storage.debug = namespaces;
-	    }
-	  } catch(e) {}
-	}
-
-	/**
-	 * Load `namespaces`.
-	 *
-	 * @return {String} returns the previously persisted debug modes
-	 * @api private
-	 */
-
-	function load() {
-	  var r;
-	  try {
-	    r = exports.storage.debug;
-	  } catch(e) {}
-	  return r;
-	}
-
-	/**
-	 * Enable namespaces listed in `localStorage.debug` initially.
-	 */
-
-	exports.enable(load());
-
-	/**
-	 * Localstorage attempts to return the localstorage.
-	 *
-	 * This is necessary because safari throws
-	 * when a user disables cookies/localstorage
-	 * and you attempt to access it.
-	 *
-	 * @return {LocalStorage}
-	 * @api private
-	 */
-
-	function localstorage(){
-	  try {
-	    return window.localStorage;
-	  } catch (e) {}
-	}
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * This is the common logic for both the Node.js and web browser
-	 * implementations of `debug()`.
-	 *
-	 * Expose `debug()` as the module.
-	 */
-
-	exports = module.exports = debug;
-	exports.coerce = coerce;
-	exports.disable = disable;
-	exports.enable = enable;
-	exports.enabled = enabled;
-	exports.humanize = __webpack_require__(7);
-
-	/**
-	 * The currently active debug mode names, and names to skip.
-	 */
-
-	exports.names = [];
-	exports.skips = [];
-
-	/**
-	 * Map of special "%n" handling functions, for the debug "format" argument.
-	 *
-	 * Valid key names are a single, lowercased letter, i.e. "n".
-	 */
-
-	exports.formatters = {};
-
-	/**
-	 * Previously assigned color.
-	 */
-
-	var prevColor = 0;
-
-	/**
-	 * Previous log timestamp.
-	 */
-
-	var prevTime;
-
-	/**
-	 * Select a color.
-	 *
-	 * @return {Number}
-	 * @api private
-	 */
-
-	function selectColor() {
-	  return exports.colors[prevColor++ % exports.colors.length];
-	}
-
-	/**
-	 * Create a debugger with the given `namespace`.
-	 *
-	 * @param {String} namespace
-	 * @return {Function}
-	 * @api public
-	 */
-
-	function debug(namespace) {
-
-	  // define the `disabled` version
-	  function disabled() {
-	  }
-	  disabled.enabled = false;
-
-	  // define the `enabled` version
-	  function enabled() {
-
-	    var self = enabled;
-
-	    // set `diff` timestamp
-	    var curr = +new Date();
-	    var ms = curr - (prevTime || curr);
-	    self.diff = ms;
-	    self.prev = prevTime;
-	    self.curr = curr;
-	    prevTime = curr;
-
-	    // add the `color` if not set
-	    if (null == self.useColors) self.useColors = exports.useColors();
-	    if (null == self.color && self.useColors) self.color = selectColor();
-
-	    var args = Array.prototype.slice.call(arguments);
-
-	    args[0] = exports.coerce(args[0]);
-
-	    if ('string' !== typeof args[0]) {
-	      // anything else let's inspect with %o
-	      args = ['%o'].concat(args);
-	    }
-
-	    // apply any `formatters` transformations
-	    var index = 0;
-	    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
-	      // if we encounter an escaped % then don't increase the array index
-	      if (match === '%%') return match;
-	      index++;
-	      var formatter = exports.formatters[format];
-	      if ('function' === typeof formatter) {
-	        var val = args[index];
-	        match = formatter.call(self, val);
-
-	        // now we need to remove `args[index]` since it's inlined in the `format`
-	        args.splice(index, 1);
-	        index--;
-	      }
-	      return match;
-	    });
-
-	    if ('function' === typeof exports.formatArgs) {
-	      args = exports.formatArgs.apply(self, args);
-	    }
-	    var logFn = enabled.log || exports.log || console.log.bind(console);
-	    logFn.apply(self, args);
-	  }
-	  enabled.enabled = true;
-
-	  var fn = exports.enabled(namespace) ? enabled : disabled;
-
-	  fn.namespace = namespace;
-
-	  return fn;
-	}
-
-	/**
-	 * Enables a debug mode by namespaces. This can include modes
-	 * separated by a colon and wildcards.
-	 *
-	 * @param {String} namespaces
-	 * @api public
-	 */
-
-	function enable(namespaces) {
-	  exports.save(namespaces);
-
-	  var split = (namespaces || '').split(/[\s,]+/);
-	  var len = split.length;
-
-	  for (var i = 0; i < len; i++) {
-	    if (!split[i]) continue; // ignore empty strings
-	    namespaces = split[i].replace(/\*/g, '.*?');
-	    if (namespaces[0] === '-') {
-	      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-	    } else {
-	      exports.names.push(new RegExp('^' + namespaces + '$'));
-	    }
-	  }
-	}
-
-	/**
-	 * Disable debug output.
-	 *
-	 * @api public
-	 */
-
-	function disable() {
-	  exports.enable('');
-	}
-
-	/**
-	 * Returns true if the given mode name is enabled, false otherwise.
-	 *
-	 * @param {String} name
-	 * @return {Boolean}
-	 * @api public
-	 */
-
-	function enabled(name) {
-	  var i, len;
-	  for (i = 0, len = exports.skips.length; i < len; i++) {
-	    if (exports.skips[i].test(name)) {
-	      return false;
-	    }
-	  }
-	  for (i = 0, len = exports.names.length; i < len; i++) {
-	    if (exports.names[i].test(name)) {
-	      return true;
-	    }
-	  }
-	  return false;
-	}
-
-	/**
-	 * Coerce `val`.
-	 *
-	 * @param {Mixed} val
-	 * @return {Mixed}
-	 * @api private
-	 */
-
-	function coerce(val) {
-	  if (val instanceof Error) return val.stack || val.message;
-	  return val;
-	}
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports) {
-
-	/**
-	 * Helpers.
-	 */
-
-	var s = 1000;
-	var m = s * 60;
-	var h = m * 60;
-	var d = h * 24;
-	var y = d * 365.25;
-
-	/**
-	 * Parse or format the given `val`.
-	 *
-	 * Options:
-	 *
-	 *  - `long` verbose formatting [false]
-	 *
-	 * @param {String|Number} val
-	 * @param {Object} options
-	 * @return {String|Number}
-	 * @api public
-	 */
-
-	module.exports = function(val, options){
-	  options = options || {};
-	  if ('string' == typeof val) return parse(val);
-	  return options.long
-	    ? long(val)
-	    : short(val);
-	};
-
-	/**
-	 * Parse the given `str` and return milliseconds.
-	 *
-	 * @param {String} str
-	 * @return {Number}
-	 * @api private
-	 */
-
-	function parse(str) {
-	  str = '' + str;
-	  if (str.length > 10000) return;
-	  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
-	  if (!match) return;
-	  var n = parseFloat(match[1]);
-	  var type = (match[2] || 'ms').toLowerCase();
-	  switch (type) {
-	    case 'years':
-	    case 'year':
-	    case 'yrs':
-	    case 'yr':
-	    case 'y':
-	      return n * y;
-	    case 'days':
-	    case 'day':
-	    case 'd':
-	      return n * d;
-	    case 'hours':
-	    case 'hour':
-	    case 'hrs':
-	    case 'hr':
-	    case 'h':
-	      return n * h;
-	    case 'minutes':
-	    case 'minute':
-	    case 'mins':
-	    case 'min':
-	    case 'm':
-	      return n * m;
-	    case 'seconds':
-	    case 'second':
-	    case 'secs':
-	    case 'sec':
-	    case 's':
-	      return n * s;
-	    case 'milliseconds':
-	    case 'millisecond':
-	    case 'msecs':
-	    case 'msec':
-	    case 'ms':
-	      return n;
-	  }
-	}
-
-	/**
-	 * Short format for `ms`.
-	 *
-	 * @param {Number} ms
-	 * @return {String}
-	 * @api private
-	 */
-
-	function short(ms) {
-	  if (ms >= d) return Math.round(ms / d) + 'd';
-	  if (ms >= h) return Math.round(ms / h) + 'h';
-	  if (ms >= m) return Math.round(ms / m) + 'm';
-	  if (ms >= s) return Math.round(ms / s) + 's';
-	  return ms + 'ms';
-	}
-
-	/**
-	 * Long format for `ms`.
-	 *
-	 * @param {Number} ms
-	 * @return {String}
-	 * @api private
-	 */
-
-	function long(ms) {
-	  return plural(ms, d, 'day')
-	    || plural(ms, h, 'hour')
-	    || plural(ms, m, 'minute')
-	    || plural(ms, s, 'second')
-	    || ms + ' ms';
-	}
-
-	/**
-	 * Pluralization helper.
-	 */
-
-	function plural(ms, n, name) {
-	  if (ms < n) return;
-	  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
-	  return Math.ceil(ms / n) + ' ' + name + 's';
-	}
-
-
-/***/ },
-/* 8 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module, __webpack_require__(9), __webpack_require__(11), __webpack_require__(12)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module, __webpack_require__(20), __webpack_require__(22), __webpack_require__(23)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	    } else if (typeof exports !== "undefined") {
 	        factory(module, require('./clipboard-action'), require('tiny-emitter'), require('good-listener'));
 	    } else {
@@ -17179,12 +18570,12 @@
 	});
 
 /***/ },
-/* 9 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
 	    if (true) {
-	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module, __webpack_require__(10)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module, __webpack_require__(21)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	    } else if (typeof exports !== "undefined") {
 	        factory(module, require('select'));
 	    } else {
@@ -17404,7 +18795,7 @@
 	});
 
 /***/ },
-/* 10 */
+/* 21 */
 /***/ function(module, exports) {
 
 	function select(element) {
@@ -17438,7 +18829,7 @@
 
 
 /***/ },
-/* 11 */
+/* 22 */
 /***/ function(module, exports) {
 
 	function E () {
@@ -17510,11 +18901,11 @@
 
 
 /***/ },
-/* 12 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(13);
-	var delegate = __webpack_require__(14);
+	var is = __webpack_require__(24);
+	var delegate = __webpack_require__(25);
 
 	/**
 	 * Validates all params and calls the right
@@ -17611,7 +19002,7 @@
 
 
 /***/ },
-/* 13 */
+/* 24 */
 /***/ function(module, exports) {
 
 	/**
@@ -17666,10 +19057,10 @@
 
 
 /***/ },
-/* 14 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var closest = __webpack_require__(15);
+	var closest = __webpack_require__(26);
 
 	/**
 	 * Delegates event to a selector.
@@ -17716,10 +19107,10 @@
 
 
 /***/ },
-/* 15 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var matches = __webpack_require__(16)
+	var matches = __webpack_require__(27)
 
 	module.exports = function (element, selector, checkYoSelf) {
 	  var parent = checkYoSelf ? element : element.parentNode
@@ -17732,7 +19123,7 @@
 
 
 /***/ },
-/* 16 */
+/* 27 */
 /***/ function(module, exports) {
 
 	
@@ -17777,22 +19168,22 @@
 	}
 
 /***/ },
-/* 17 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = "# 欢迎使用 best layout\n\n# 总体属性\n\n```css\nfont-size: 16px;\nfont-family: 'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif;\ncolor: #444;\nline-height: 1.6;\ntab-size: 4;\ntext-align: justify;` start?\nword-break: break-word;`\n```\n\n# 标题 heading\n\n标题只有一种，因此 `h1` 还是 `h6` 都一样\n\n```css\nfont-size: 1.5em;\ncolor: green;\nfont-weight: bold;\nmargin: 0 0 1.5em 0;\n```\n\n\n# 段落 paragragh\n\n```css\nfont-size: 1em;\nmargin-bottom: 1.5em;\n```\n\n这是一个段落\n\n这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落，这是一个段落\n\n这是一个段落\n\n\n# 段落块\n\n```css\npadding: 1em;\n```\n\n> 这是一个段落快\n\n# 无序列表\n\n```css\nlist-style-type: disc;\npadding-left: 2em;\n```\n\n- 这是无序列表\n- 这是无序列表\n- 这是无序列表\n- 这是无序列表\n\n# 有序列表\n\n```css\nlist-style-type: decimal;\npadding-left: 2em;\n```\n\n1. 这是有序列表\n1. 这是有序列表\n1. 这是有序列表\n1. 这是有序列表\n\n# 强调 strong\n\nstrong 不加粗，因为太多加粗很难看，使用主题色，没有主题色的时候才加粗\n\n```css\nfont-weight: normal;\ncolor: theme;\n```\n\n这是一句话里面有**强调**的内容\n\n# 链接\n\n```css\ncolor: #105CB6;\ntext-decoration: none;\n```\n\nhover 时\n\n```css\ntext-decoration: underline;\n```\n\n这是一句话里面有[链接](/link)\n\n# 分割线\n\n分割线上\n\n---\n\n分割线下\n\n```css\nmargin: 2em 0;\nborder-top: 1px solid rgba(102,128,153,0.1);\nheight: 0;\n```\n\n# 代码\n\n# 代码快\n\n# 斜体\n\n\n"
 
 /***/ },
-/* 18 */
+/* 29 */
 /***/ function(module, exports) {
 
 	module.exports = "<!doctype html>\n<html>\n<head>\n    <meta charset=\"utf8\">\n    <title>preview</title>\n    <style>\n    * {\n        margin: 0;\n        padding: 0;\n        box-sizing: border-box;\n    }\n\tbody, html {\n\t\theight: 100%;\n\t}\n\t{{css}}\n    </style>\n\t<script src=\"./jquery.min.js\"></script>\n\t<script src=\"./bundle.js\"></script>\n</head>\n<body>\n\t<div id=\"preview\" class=\"content\">\n\t\t{{html}}\n    </div>\n</body>\n</html>\n\n"
 
 /***/ },
-/* 19 */
+/* 30 */
 /***/ function(module, exports) {
 
-	module.exports = ".content {\n\ttext-align: justify;\n\tline-height: 1.6;\n\tfont-size: 16px;\n\tfont-family: 'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif;\n\tcolor: #444;\n\ttab-size: 4;\n\tword-break: break-word;\n}\n\nh1, h2, h3, h4, h5, h6 {\n\tfont-size: 1.2em;\n\tcolor: green;\n\tfont-weight: bold;\n\tmargin: 0.8em 0;\n}\n\np {\n\tmargin: 0.8em 0;\n\tfont-size: 1em;\n}\n\nblockquote {\n\tpadding: 1em;\n}\n\nul {\n\tlist-style-type: disc;\n\tpadding-left: 2em;\n}\n\nol {\n\tlist-style-type: decimal;\n\tpadding-left: 2em;\n}\n\nstrong {\n\tcolor: green;\n\tfont-weight: normal;\n}\n\na {\n\tcolor: #105CB6;\n\ttext-decoration: none;\n}\n\na:hover {\n\ttext-decoration: underline;\n}\n\ncode {\n\tfont-family: Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n\tbackground-color: #f9f2f4;\n\tborder-radius: 4px;\n}\n\nhr {\n\tmargin: 2em 0;\n\tborder-top: 1px solid rgba(102,128,153,0.1);\n\theight: 0;\n}\n"
+	module.exports = ".content {\n\ttext-align: justify;\n\tline-height: 1.6;\n\tfont-size: 16px;\n\tfont-family: 'Helvetica Neue', Arial, 'Hiragino Sans GB', STHeiti, 'Microsoft YaHei', 'WenQuanYi Micro Hei', SimSun, Song, sans-serif;\n\tcolor: #444;\n\ttab-size: 4;\n\tword-break: break-word;\n}\n\nh1, h2, h3, h4, h5, h6 {\n\tfont-size: 1.2em;\n\tcolor: green;\n\tfont-weight: bold;\n\tmargin: 0.8em 0;\n}\n\np {\n\tmargin: 0.8em 0;\n\tfont-size: 1em;\n}\n\nblockquote {\n\tmargin: 1em;\n}\n\nul {\n\tlist-style-type: disc;\n\tpadding-left: 2em;\n}\n\nol {\n\tlist-style-type: decimal;\n\tpadding-left: 2em;\n}\n\nstrong {\n\tcolor: green;\n\tfont-weight: normal;\n}\n\na {\n\tcolor: #105CB6;\n\ttext-decoration: none;\n}\n\na:hover {\n\ttext-decoration: underline;\n}\n\ncode {\n\tfont-family: Consolas, \"Liberation Mono\", Menlo, Courier, monospace;\n\tbackground-color: #f9f2f4;\n\tborder-radius: 4px;\n}\n\nhr {\n\tmargin: 2em 0;\n\tborder-top: 1px solid rgba(102,128,153,0.1);\n\theight: 0;\n}\n"
 
 /***/ }
 /******/ ]);
