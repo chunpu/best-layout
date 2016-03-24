@@ -109,15 +109,24 @@ var modernRules = {
 var oldRules = {
 	// discuz
 	// font support `style="background-color: xxx"`
-	paragraph: {
+	text: {
+		html: function(node, output, state) {
+			var ret = node.content + ''
+			ret = ret.replace(/\n/g, '<br>')
+			return ret
+		}
+	}
+	, paragraph: {
 		html: function(node, output, state) {
 			var font = htmlTag('font', output(node.content, state), {face: fontFamily, size: 3, color: textColor})
-			return htmlTag('div', font)
+			return htmlTag('div', font) + '<br>'
 		}
 	}
 	, heading: {
 		html: function(node, output, state) {
-			return htmlTag('h' + node.level, output(node.content, state), {face: fontFamily, size: 2, color: textColor})
+			var font = htmlTag('font', output(node.content, state), {face: fontFamily, size: 4, color: themeColor})
+			var strong = htmlTag('strong', font)
+			return '<br>' + htmlTag('div', strong) + '<br>'
 		}
 	}
 	, inlineCode: {
@@ -132,7 +141,8 @@ var oldRules = {
 	}
 	, strong: {
 		html: function(node, output, state) {
-			return htmlTag('strong', output(node.content, state), {})
+			var font = htmlTag('font', output(node.content, state), {color: themeColor})
+			return htmlTag('strong', font)
 		}
 	}
 }
@@ -140,7 +150,7 @@ var oldRules = {
 // var aaa = getCSSText({'border': '1px solid red'})
 // console.log(aaa)
 
-rules = getBestRules(rules, modernRules)
+rules = getBestRules(rules, oldRules)
 // console.log(rules)
 // console.log(rules.paragraph.html)
 
